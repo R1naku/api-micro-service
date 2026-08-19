@@ -1,0 +1,54 @@
+services:
+  app:
+    image: php:8.3-cli
+    container_name: api-micro-service-app
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: local
+      APP_KEY: base64:QJgq6T8IW2Y4xM7gHn2kY6mTR5b3aFQ8uD0g2hL1oWQ=
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      LOG_CHANNEL: stack
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: api_micro_service
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+    command: >
+      bash -lc "apt-get update && \
+      apt-get install -y --no-install-recommends git curl libpq-dev libzip-dev unzip libonig-dev libicu-dev libxml2-dev \
+      && docker-php-ext-install pdo_pgsql zip opcache \
+      && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+      && if [ ! -f .env ]; then cp .env.example .env; fi \
+      && composer install --no-interaction --prefer-dist --no-progress --no-scripts \
+      && composer dump-autoload --no-interaction \
+      && php artisan key:generate --force \
+      && php artisan migrate --force \
+      && php artisan serve --host=0.0.0.0 --port=8000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: api-micro-service-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: api_micro_service
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
